@@ -1,0 +1,20 @@
+package: github.com/3dsinteractive/deepcopier
+import:
+- package: github.com/ant0ine/go-json-rest
+  version: ^3.3.2
+  subpackages:
+  - rest
+- package: github.com/jinzhu/gorm
+  version: ^1.9.1
+- package: github.com/lib/pq
+  version: ^1.0.0
+- package: github.com/ulule/deepcopier
+testImport:
+- package: github.com/guregu/null
+  version: ^3.4.0
+- package: github.com/satori/go.uuid
+  version: ^1.2.0
+- package: github.com/stretchr/testify
+  version: ^1.2.2
+  subpackages:
+  - require

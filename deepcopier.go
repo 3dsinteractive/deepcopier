@@ -84,12 +84,37 @@ func process(dst interface{}, src interface{}, args ...Options) error {
 
 	for _, f := range srcFieldNames {
 		var (
-			srcFieldValue               = srcValue.FieldByName(f)
-			srcFieldType, srcFieldFound = srcValue.Type().FieldByName(f)
-			srcFieldName                = srcFieldType.Name
-			dstFieldName                = srcFieldName
-			tagOptions                  TagOptions
+			srcFieldValue reflect.Value
+			srcFieldType  reflect.StructField
+			srcFieldFound bool
+			srcFieldName  string
+			dstFieldName  string
+			tagOptions    TagOptions
 		)
+
+		// If deepcopy property of Struct
+		if strings.Contains(f, ".") {
+			iField := strings.Split(f, ".")
+			iFieldValue := srcValue.FieldByName(iField[0])
+
+			// If field value is Ptr of struct
+			if iFieldValue.Kind() == reflect.Ptr && reflect.Indirect(iFieldValue).Kind() == reflect.Struct {
+				iFieldValue = reflect.Indirect(iFieldValue)
+			}
+
+			iiFieldType, iiFieldFound := iFieldValue.Type().FieldByName(iField[1])
+			if iiFieldFound {
+				srcFieldValue = iFieldValue.FieldByName(iField[1])
+				srcFieldType, srcFieldFound = iiFieldType, iiFieldFound
+				srcFieldName = f
+				dstFieldName = f
+			}
+		} else {
+			srcFieldValue = srcValue.FieldByName(f)
+			srcFieldType, srcFieldFound = srcValue.Type().FieldByName(f)
+			srcFieldName = srcFieldType.Name
+			dstFieldName = srcFieldName
+		}
 
 		if !srcFieldFound {
 			continue
@@ -347,6 +372,27 @@ func getFieldNames(instance interface{}) []string {
 
 		if tField.Type.Kind() == reflect.Struct && tField.Anonymous {
 			fields = append(fields, getFieldNames(vField.Interface())...)
+			continue
+		}
+
+		// Is Struct
+		if tField.Type.Kind() == reflect.Struct {
+			fields = append(fields, tField.Name)
+			inFields := getFieldNames(vField.Interface())
+			for _, inField := range inFields {
+				fields = append(fields, tField.Name+"."+inField)
+			}
+			continue
+		}
+
+		// Is Pointer of Struct
+		if tField.Type.Kind() == reflect.Ptr && reflect.Indirect(vField).Kind() == reflect.Struct {
+			fields = append(fields, tField.Name)
+			vField = reflect.Indirect(vField)
+			inFields := getFieldNames(vField.Interface())
+			for _, inField := range inFields {
+				fields = append(fields, tField.Name+"."+inField)
+			}
 			continue
 		}
 

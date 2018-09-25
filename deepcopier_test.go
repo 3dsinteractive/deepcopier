@@ -11,6 +11,38 @@ import (
 	assert "github.com/stretchr/testify/require"
 )
 
+func TestStructField(t *testing.T) {
+	type (
+		Rel struct {
+			Int int
+		}
+
+		Src struct {
+			Struct    Rel
+			StructPtr *Rel
+		}
+
+		Dst struct {
+			IntFromStruct    int `deepcopier:"field:Struct.Int"`
+			IntFromStructPtr int `deepcopier:"field:StructPtr.Int"`
+		}
+	)
+
+	var (
+		rel = Rel{Int: 1}
+	)
+
+	src := &Src{
+		Struct:    rel,
+		StructPtr: &rel,
+	}
+
+	dst := &Dst{}
+	assert.Nil(t, Copy(src).To(dst))
+	assert.Equal(t, src.Struct.Int, dst.IntFromStruct)
+	assert.Equal(t, src.StructPtr.Int, dst.IntFromStructPtr)
+}
+
 func TestField(t *testing.T) {
 	type (
 		Rel struct {
